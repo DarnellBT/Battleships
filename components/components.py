@@ -5,7 +5,8 @@ create_battleships
 place_battleships
 """
 
-Board = list(list(dict[str, int] | None))
+# This is the type for board_state
+Board = list[list[dict[str, int] | None]]
 
 def initialise_board(size: int = 10) -> Board:
     """Initialises board."""
