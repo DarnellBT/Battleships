@@ -13,10 +13,8 @@ def initialise_board(size: int = 10) -> Board:
     board_state: Board = [[None for _ in range(size)] for _ in range(size)]
     return board_state
 
-
 def create_battleships():
     """Creates battleships."""
-
 
 def place_battleships():
     """Places battleships."""
