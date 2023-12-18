@@ -1,106 +1,65 @@
-# Testing Documentation
+# Battleships
 
----
+## Battleships Setup
 
-This Battleships project uses the [https://docs.pytest.org/en/7.4.x/](pytest framework) to unit test each module.
-The pytest framework requires Python 3.7+ or PyPy3 versions.
+Before setting up Battleships you should have at least Python 3.12+ installed as this was the version used write Battleships. You should also have python as a PATH variable.
 
----
+### Using the config.py module to alter battleship settings
 
-## Initialisation of Virtual Environment for Testing
+There are four configs that can be altered within the config.py module which is found within the Battleships directory:
 
-+ To start testing modules a virtual environment can be created.
-+ In this virtual environment pytest can be installed.
++ `BOARD_SIZE` - determines how many cells make up a side length of the battleships board. This is set to 10 by default.
 
-> The example below shows these using PowerShell.
++ `DEFAULT_FILENAME` - determines the filename of the file containing the battleships' names and battleships' lengths. This is set to `'battleships.txt'` by default.
+
++ `DIFFICULTY` - determines the difficulty of the ai the player plays against. This is set to `'Normal'` by default. (The options are `'Normal'` and `'Easy'`.)
+
++ `ITERATION_LIMIT` - determines the maximum number of attepts for a valid random battleship placement that can happen when setting up the ai's board. this is set to 100 by default.
+
+### game_engine.py for debugging
+
+The game_engine.py can be used for debugging purposes to test player attacking. To run this module you should be in the Battleships directory within a command-line interface and must enter the command:
 
 ```powershell
-PS> python -m venv venv
-PS> .\venv\Scripts\activate
-(venv) PS> python -m pip install pytest
+python game_engine.py
 ```
 
----
+or
 
-components
-
-verticle_place(boat, length, row_start, column)
-horizontal_place(boat, length, row, column_start)
-
-```python
-mssgs = []
-def show(f):
-    def wrapper(*args, **kwargs):
-        mssg = f(*args, **kwargs)
-        mssgs.append((f.__name__, mssg))
-        return mssg
-    return wrapper
-
-boats = {
-            "AC"    :   5,
-            "Ba"    :   4,
-            "Cr"    :   3,
-            "Su"    :   3,
-            "De"    :   2
-        }
-SIZE = 10
-minimum_size = max(boats.values())
-if SIZE < minimum_size:
-    SIZE = minimum_size
-board = [[None for column in range(SIZE)] for row in range(SIZE)]
-
-#@show
-def verticle_placement(boat_name, boat_length, row_start, column):
-    """Places the top most part of a boat at a selected row."""
-    if not 0 <= column <= SIZE - 1:
-        return "The column not in the range [0 - %d]." % (SIZE - 1)
-    if not 0 <= row_start <= SIZE - boat_length:
-        return " The row is not in the range [0 - %d]." % (SIZE - boat_length)
-    row_end = row_start + boat_length
-    if any(None is not tile for tile in map(lambda board_row : board_row[column], board[row_start:row_end])):
-        return "The placement of the %s collides with a boat that is already on the board." % boat_name
-    for row in range(row_start, row_end):
-        board[row][column] = boat_name
-
-#@show
-def horizontal_placement(boat_name, boat_length, row, column_start):
-    """Places the left most part of a boat at a selected column."""
-    if not 0 <= row <= SIZE - 1:
-        return "The row not in the range [0 - %d]." % (SIZE - 1)
-    if not 0 <= column_start <= SIZE - boat_length:
-        return " The column is not in the range [0 - %d]." % (SIZE - boat_length)
-    column_end = column_start + boat_length
-    if any(None is not tile for tile in board[row][column_start:column_end]):
-        return "The placement of the %s collides with a boat that is already on the board." % boat_name
-    for column in range(column_start, column_end):
-        board[row][column] = boat_name
-
-def placement():
-    """Places boats on the board"""
-    # If there is not a placement on a full pass on the last boat then switch orientation of placement.
-    # Bound the size of the board bigger or equal to the length of the longest boat.
-    from random import randint
-    # Orders boats from by length from shortest to longest boat.
-    boats_not_placed = sorted(boats.items(), reverse=True, key=lambda x : x[1])
-    # Iteration limit for placement algorithm.
-    ITERATION_LIMIT = 100
-    iteration_count = 0
-    while boats_not_placed and iteration_count < ITERATION_LIMIT:
-        iteration_count += 1
-        row = randint(0, SIZE)
-        column = randint(0, SIZE)
-        is_verticle_placement = bool(randint(0, 2))
-        if is_verticle_placement:
-            if bool(verticle_placement(*boats_not_placed[0], row, column)):
-                continue
-        else:
-            if bool(horizontal_placement(*boats_not_placed[0], row, column)):
-                continue
-        boats_not_placed.pop(0)
-    #if iteration_count == 1000:
-    #    print("The iteration limit of %d was reached." % ITERATION_LIMIT)
-    #print(f"{iteration_count=}\n{boats_not_placed=}")
-
-placement()
-print(*board, *mssgs, sep='\n')
+```powershell
+python3 game_engine.py
 ```
+
+Now after this the user is prompted to enter and x and y coordinate to attack. Once entered you would be shown if you missed a ship or if you hit a ship. This will continue until all ships are sunken. You can cancel a coordinate by entering `q` once and you can quit the game by entering `q` twice.
+
+### mp_game_engine.py for playing against ai in the command line
+
+The mp_game_engine.py can be used to play Battleships agaist an ai opponent in a command-line. To run this module you should be in the Battleships directory within a command-line interface and must enter the command:
+
+```powershell
+python mp_game_engine.py
+```
+
+or
+
+```powershell
+python3 mp_game_engine.py
+```
+
+Now after this the user is prompted to enter and x and y coordinate to attack. Once entered you would be shown if you missed a ship or if you hit a ship. This will the be followed by an ai attack on the player ships where the player and ai will take turns attacking. This will continue until all ai ships are sunken or all player ships are sunken. You can cancel a coordinate by entering `q` once and you can quit the game by entering `q` twice.
+
+### main.py for playing against ai in a web browser
+
+The main.py can be used to play Battleships agaist an ai opponent in a web browser GUI. To run this module you should be in the Battleships directory within a command-line interface and must enter the command:
+
+```powershell
+python main.py
+```
+
+or
+
+```powershell
+python3 main.py
+```
+
+Now after this you should enter [http://127.0.0.1:5000/placement] into a web browser in order place your Battleships. The you should click on the green `Send Game` to begin playing the game. The player starts frist and the ai follows with their turn automatically. Clicking on a cell on the large board indicates a player attack where the cell will turn light-blue if the player misses a ship and turn red if the player hits a ship. A smaller board to the right of the large board represents the player board and shows where the ai has attacked where each cell will turn dark-blue if the ai misses your ship and turn red if the ai hits your ship. The game ends once either all ai ship are sunken or all player ships are sunken.

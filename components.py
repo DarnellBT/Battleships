@@ -1,102 +1,161 @@
-""" components module: contains functions 
-    initialise_board
-    create_battleships
-    place_battleships"""
+"""components
 
-from pathlib import Path
-from random import randint
+Functions: 
+initialise_board
+create_battleships
+horizontal_placement
+vertical_placement
+place_battleships"""
 
-# This is the type for board_state
-type BoardState = list[list[str | None]]
-DEFAULT_FILENAME: Path = 'battleships.txt' #Path(__file__).parent.resolve() /
-# Iteration limit for placement algorithm
-ITERATION_LIMIT: int = 100
+from io import TextIOWrapper
+from typing import Callable
+from flask import json
+from config import BOARD_SIZE, BATTLESHIPS_FILENAME
 
-def initialise_board(size: int = 10) -> BoardState:
-    """Initialises board."""
-    board_state: BoardState = []
-    row: list[None]
+def initialise_board(size: int=BOARD_SIZE) -> list[list[str | None]]:
+    """Takes `size` as an int value with default value `BOARD_SIZE`. Returns initialised board as a
+    list of list of str or None values.
+    """
+    board: list[list[str | None]]
+    board_row: list[str | None]
+    board = []
     for _ in range(size):
-        row = []
+        board_row = []
         for _ in range(size):
-            row.append(None)
-        board_state.append(row)
-    return board_state
+            board_row.append(None)
+        board.append(board_row)
+    return board
 
-def create_battleships(filename: Path = DEFAULT_FILENAME) -> dict[str, int]:
-    """Creates battleships."""
+def create_battleships(filename: str=BATTLESHIPS_FILENAME) -> dict[str, int]:
+    """Takes `filename` as a str value with default value `BATTLESHIPS_FILENAME`. Returns
+    battleships as a dict of str and int key-value pairs.
+    """
+    file: TextIOWrapper
+    lines: list[str]
+    battleships: dict[str, int]
+    ship_name: str
+    ship_length: str
+    # Each line in 'filename' has it's newline character removed if it is present and then split
+    # by the comma in each line where the left of the comma is assigned to battleship and the
+    # right of the comma is assigned to ship_size.
     with open(filename, 'r', encoding='utf-8') as file:
         lines = file.readlines()
-    battleships: dict[str, int] = {}
-    ship: str
-    ship_size: str
+    battleships = {}
     for line in lines:
-        # Each line in 'filename' has it's newline character removed if it is present and then split
-        # by the comma in each line where the left of the comma is assigned to ship and the right of
-        # the comma is assigned to ship_size.
-        ship, ship_size = line.replace('\n', '').split(',') # use strip?
-        battleships[ship] = int(ship_size)
+        ship_name, ship_length = line.strip().split(',')
+        battleships.update({ship_name: int(ship_length)})
     return battleships
 
-def verticle_placement(
-        board_state: BoardState,
-        ship_name: str, ship_length: int,
-        column: int, row_start: int
-    ) -> bool:
-    """Places the top most part of a boat at a selected row."""
-    has_verticle_placement_collision: bool = False
-    if not 0 <= column <= len(board_state) - 1:
-        has_verticle_placement_collision = True
-        return has_verticle_placement_collision
-    if not 0 <= row_start <= len(board_state) - ship_length:
-        has_verticle_placement_collision = True
-        return has_verticle_placement_collision
-    row_end = row_start + ship_length
-    row_range: map = map(lambda board_row : board_row[column], board_state[row_start:row_end])
-    if any(None is not cell for cell in row_range):
-        has_verticle_placement_collision = True
-        return has_verticle_placement_collision
-    for row in range(row_start, row_end):
-        board_state[row][column] = ship_name
-    return has_verticle_placement_collision
-
 def horizontal_placement(
-        board_state: BoardState,
-        ship_name: str, ship_length: int,
-        column_start: int,  row: int
+        board: list[list[str | None]],
+        ship_name: str,
+        ship_length: int,
+        x_coordinate_start: int,
+        y_coordinate: int
     ) -> bool:
-    """Places the left most part of a boat at a selected column."""
-    has_horizontal_placement_collision: bool = False
-    if not 0 <= column_start <= len(board_state) - ship_length:
+    """Takes `board` as list of list of str or None values, `ship_name` as a str value,
+    `ship_length` as an int value, `x_coordinate_start` as an int value and `y_coordinate` as an
+    int value. Returns if there was a collision during placement as a bool. Places the left most
+    part of a boat at a selected x coordinate.
+    """
+    has_horizontal_placement_collision: bool
+    x_coordinate_end: int
+    x_coordinate: int
+    cell: str | None
+    has_horizontal_placement_collision = False
+    # Checks if whole ship wil be on board.
+    if not 0 <= x_coordinate_start <= len(board) - ship_length:
         has_horizontal_placement_collision = True
         return has_horizontal_placement_collision
-    if not 0 <= row <= len(board_state) - 1:
+    if not 0 <= y_coordinate <= len(board) - 1:
         has_horizontal_placement_collision = True
         return has_horizontal_placement_collision
-    column_end = column_start + ship_length
-    if any(None is not tile for tile in board_state[row][column_start:column_end]):
-        has_horizontal_placement_collision = True
-        return has_horizontal_placement_collision
-    for column in range(column_start, column_end):
-        board_state[row][column] = ship_name
+    # Checks if there are collisions with other ships.
+    x_coordinate_end = x_coordinate_start + ship_length
+    for cell in board[y_coordinate][x_coordinate_start:x_coordinate_end]:
+        if cell is not None:
+            has_horizontal_placement_collision = True
+            return has_horizontal_placement_collision
+    # Places ship on board.
+    for x_coordinate in range(x_coordinate_start, x_coordinate_end):
+        board[y_coordinate][x_coordinate] = ship_name
     return has_horizontal_placement_collision
 
-def place_battleships(board_state: BoardState, ships: dict[str, int]) -> BoardState:
-    """Places battleships for the AI"""
+def vertical_placement(
+        board: list[list[str | None]],
+        ship_name: str,
+        ship_length: int,
+        x_coordinate: int,
+        y_coordinate_start: int
+    ) -> bool:
+    """Takes `board` as list of list of str or None values, `ship_name` as a str value,
+    `ship_length` as an int value, `x_coordinate` as an int value and `y_coordinate_start` as an
+    int value. Returns if there was a collision during placement as a bool. Places the top most
+    part of a boat at a selected y coordinate.
+    """
+    has_vertical_placement_collision: bool
+    y_coordinate_end: int
+    y_coordinate_range: list[str | None]
+    y_coordinate: int
+    has_vertical_placement_collision = False
+    # Checks if whole ship wil be on board.
+    if not 0 <= x_coordinate <= len(board) - 1:
+        has_vertical_placement_collision = True
+        return has_vertical_placement_collision
+    if not 0 <= y_coordinate_start <= len(board) - ship_length:
+        has_vertical_placement_collision = True
+        return has_vertical_placement_collision
+    # Checks if there are collisions with other ships.
+    y_coordinate_end = y_coordinate_start + ship_length
+    for y_coordinate_range in board[y_coordinate_start:y_coordinate_end]:
+        if y_coordinate_range[x_coordinate] is not None:
+            has_vertical_placement_collision = True
+            return has_vertical_placement_collision
+    # Places ship on board.
+    for y_coordinate in range(y_coordinate_start, y_coordinate_end):
+        board[y_coordinate][x_coordinate] = ship_name
+    return has_vertical_placement_collision
 
-    # Orders ships from by length from shortest to longest boat.
-    ships_not_placed = sorted(ships.items(), reverse=True, key=lambda ship : ship[1])
-    iteration_count: int = 0
-    while ships_not_placed and iteration_count < ITERATION_LIMIT:
-        iteration_count += 1
-        cell_column: int = randint(0, len(board_state))
-        cell_row: int = randint(0, len(board_state))
-        is_verticle_placement = bool(randint(0, 2))
-        if is_verticle_placement:
-            if verticle_placement(board_state, *ships_not_placed[0], cell_column, cell_row):
-                continue
-        else:
-            if horizontal_placement(board_state, *ships_not_placed[0], cell_column, cell_row):
-                continue
-        ships_not_placed.pop(0)
-    return board_state
+def place_battleships(
+        board: list[list[str | None]],
+        ships: dict[str, int],
+        algorithm: Callable[[], None] | None=None
+    ) -> list[list[str | None]]:
+    """Takes Places ships for player"""
+    ship_name: str
+    placement: list[str]
+    x_coordinate: int
+    y_coordinate: int
+    cell_y_coordinate: int
+    ship: tuple[str, int]
+    if algorithm is not None:
+        algorithm()
+    else:
+        try:
+            with open('placement.json', 'r', encoding='utf-8') as placement_json:
+                for ship_name, placement in json.load(placement_json).items():
+                    x_coordinate = int(placement[0])
+                    y_coordinate = int(placement[1])
+                    if placement[2] == 'h':
+                        horizontal_placement(
+                            board,
+                            ship_name,
+                            ships[ship_name],
+                            x_coordinate,
+                            y_coordinate
+                        )
+                    elif placement[2] == 'v':
+                        vertical_placement(
+                            board,
+                            ship_name,
+                            ships[ship_name],
+                            x_coordinate,
+                            y_coordinate
+                        )
+                    else:
+                        print('Invalid orientation')
+        except FileNotFoundError:
+            # This is the default placement for battleships is 'placement.json' is not found.
+            for cell_y_coordinate, ship in enumerate(ships.items()):
+                horizontal_placement(board, *ship, 0, cell_y_coordinate)
+    return board
